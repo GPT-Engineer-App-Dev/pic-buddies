@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle } from "lucide-react";
+import { toast } from "sonner";
 
 const fetchPhotos = async () => {
   const response = await fetch("/api/photos");
@@ -9,11 +10,37 @@ const fetchPhotos = async () => {
   return response.json();
 };
 
+const likePhoto = async (photoId) => {
+  const response = await fetch(`/api/photos/${photoId}/like`, {
+    method: "POST",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to like photo");
+  }
+  return response.json();
+};
+
 const Index = () => {
+  const queryClient = useQueryClient();
   const { data: photos, error, isLoading } = useQuery({
     queryKey: ["photos"],
     queryFn: fetchPhotos,
   });
+
+  const mutation = useMutation({
+    mutationFn: likePhoto,
+    onSuccess: () => {
+      queryClient.invalidateQueries("photos");
+      toast("Photo liked successfully!");
+    },
+    onError: () => {
+      toast("Failed to like photo. Please try again.");
+    },
+  });
+
+  const handleLike = (photoId) => {
+    mutation.mutate(photoId);
+  };
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading photos</div>;
@@ -40,9 +67,14 @@ const Index = () => {
           />
           <p className="mt-2">{photo.caption}</p>
           <div className="flex items-center space-x-4 mt-2">
-            <button className="flex items-center space-x-1 text-muted-foreground">
+            <button
+              className={`flex items-center space-x-1 ${
+                photo.liked ? "text-red-500" : "text-muted-foreground"
+              }`}
+              onClick={() => handleLike(photo.id)}
+            >
               <Heart className="w-4 h-4" />
-              <span>Like</span>
+              <span>{photo.likes}</span>
             </button>
             <button className="flex items-center space-x-1 text-muted-foreground">
               <MessageCircle className="w-4 h-4" />
