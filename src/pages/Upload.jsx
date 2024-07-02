@@ -1,18 +1,51 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const UploadPage = () => {
   const [photo, setPhoto] = useState(null);
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (newPhoto) => {
+      const formData = new FormData();
+      formData.append("photo", newPhoto.photo);
+      formData.append("caption", newPhoto.caption);
+      formData.append("tags", newPhoto.tags);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload photo");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries("photos");
+      toast("Photo uploaded successfully!");
+    },
+    onError: () => {
+      toast("Failed to upload photo. Please try again.");
+    },
+  });
 
   const handlePhotoChange = (e) => {
-    setPhoto(URL.createObjectURL(e.target.files[0]));
+    setPhoto(e.target.files[0]);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle photo upload logic here
-    console.log({ photo, caption, tags });
+    if (photo) {
+      mutation.mutate({ photo, caption, tags });
+    } else {
+      toast("Please select a photo to upload.");
+    }
   };
 
   return (
@@ -27,7 +60,7 @@ const UploadPage = () => {
         />
         {photo && (
           <img
-            src={photo}
+            src={URL.createObjectURL(photo)}
             alt="Preview"
             className="w-full h-auto mt-4 rounded-lg"
           />

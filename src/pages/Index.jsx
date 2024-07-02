@@ -1,25 +1,22 @@
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Heart, MessageCircle } from "lucide-react";
 
-const placeholderData = [
-  {
-    id: 1,
-    username: "user1",
-    caption: "Beautiful sunset!",
-    time: "2 hours ago",
-    imageUrl: "https://via.placeholder.com/300",
-  },
-  {
-    id: 2,
-    username: "user2",
-    caption: "Lovely beach",
-    time: "5 hours ago",
-    imageUrl: "https://via.placeholder.com/300",
-  },
-];
+const fetchPhotos = async () => {
+  const response = await fetch("/api/photos");
+  if (!response.ok) {
+    throw new Error("Failed to fetch photos");
+  }
+  return response.json();
+};
 
 const Index = () => {
-  const [photos, setPhotos] = useState(placeholderData);
+  const { data: photos, error, isLoading } = useQuery({
+    queryKey: ["photos"],
+    queryFn: fetchPhotos,
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading photos</div>;
 
   return (
     <div className="space-y-4">
@@ -27,7 +24,7 @@ const Index = () => {
         <div key={photo.id} className="border rounded-lg p-4">
           <div className="flex items-center space-x-2">
             <img
-              src="https://via.placeholder.com/40"
+              src={photo.userProfilePicture}
               alt={photo.username}
               className="w-10 h-10 rounded-full"
             />

@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-const placeholderProfile = {
-  username: "user1",
-  bio: "Photographer & Traveler",
-  profilePicture: "https://via.placeholder.com/100",
-  photos: [
-    "https://via.placeholder.com/300",
-    "https://via.placeholder.com/300",
-    "https://via.placeholder.com/300",
-  ],
+const fetchProfile = async () => {
+  const response = await fetch("/api/profile");
+  if (!response.ok) {
+    throw new Error("Failed to fetch profile");
+  }
+  return response.json();
 };
 
 const Profile = () => {
-  const [profile, setProfile] = useState(placeholderProfile);
+  const { data: profile, error, isLoading } = useQuery({
+    queryKey: ["profile"],
+    queryFn: fetchProfile,
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading profile</div>;
 
   return (
     <div className="space-y-4">
